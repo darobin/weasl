@@ -1,23 +1,24 @@
 
 /* eslint @typescript-eslint/no-explicit-any: 0 */
-
-import { Cid as CID, fromString as parseCID, CODEC_RAW } from "@atcute/cid";
+import CID from "./cid.js";
 
 export type WEASLOptions = {
   store?: WEASLStore,
 };
 
-export type WEASLMethod = 'put' | 'get' | 'delete';
+export type WEASLMethod = 'put' | 'get' | 'has' | 'delete';
+
+// XXX
+// - async init/shutdown
+// - #interfaces: []
 
 export abstract class WEASLResponse {
   ok: boolean;
   method: WEASLMethod;
   error?: string;
-  isRaw: boolean;
-  isData: boolean;
   cid: CID;
   constructor (cid: CID | string, method: WEASLMethod, error?: string) {
-    if (typeof cid === 'string') cid = parseCID(cid);
+    if (typeof cid === 'string') cid = new CID(cid);
     this.cid = cid;
     this.method = method;
     if (error) {
@@ -27,19 +28,22 @@ export abstract class WEASLResponse {
     else {
       this.ok = true;
     }
-    this.isRaw = (cid.codec === CODEC_RAW);
-    this.isData = !this.isRaw;
   }
+  get isRaw () { return this.cid.isRaw;  }
+  get isData () { return this.cid.isData;  }
   abstract data (): Promise<any>;
   abstract stream (): Promise<ReadableStream>;
-  abstract bytes (): Promise<ArrayBufferView>;
+  abstract bytes (): Promise<Uint8Array>;
 }
 
 export abstract class WEASLStore {
   // constructor (options?);
-  abstract putRaw (raw: ArrayBufferView | ReadableStream): Promise<void>;
-  abstract putData (data: any): Promise<void>;
+  abstract init (ctx?: WEASL): Promise<void>;
+  abstract shutdown (ctx?: WEASL): Promise<void>;
+  abstract putRaw (raw: Uint8Array | ReadableStream): Promise<CID>;
+  abstract putData (data: any): Promise<CID>;
   abstract get (cid: CID | string): Promise<WEASLResponse>;
+  abstract has (cid: CID | string): Promise<WEASLResponse>;
   abstract delete (cid: CID | string): Promise<WEASLResponse>;
 }
 
@@ -51,16 +55,28 @@ export default class WEASL implements WEASLStore {
   constructor (options?: WEASLOptions) {
     if (options?.store) this.#store = options.store;
   }
-  async putRaw (raw: ArrayBufferView | ReadableStream): Promise<void> {
-    return this.#store.putRaw(raw);
+  async init () {
+    await Promise.all([this.#store].filter(Boolean).map(v => v.init(this)));
   }
-  async putData (data: any): Promise<void> {
+  async shutdown () {
+    await Promise.all([this.#store].filter(Boolean).map(v => v.shutdown(this)));
+  }
+  async putRaw (raw: Uint8Array | ReadableStream): Promise<CID> {
+    return this.#store.putRaw(raw);
+    // XXX notify interfaces with CID when done
+  }
+  async putData (data: any): Promise<CID> {
     return this.#store.putData(data);
+    // XXX notify interfaces with CID when done
   }
   async get (cid: CID | string): Promise<WEASLResponse> {
     return this.#store.get(cid);
   }
+  async has (cid: CID | string): Promise<WEASLResponse> {
+    return this.#store.has(cid);
+  }
   async delete (cid: CID | string): Promise<WEASLResponse> {
     return this.#store.delete(cid);
+    // XXX notify interfaces with CID when done
   }
 }
