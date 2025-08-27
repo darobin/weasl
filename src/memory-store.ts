@@ -5,7 +5,7 @@ import { arrayBuffer } from 'node:stream/consumers';
 import { create, CODEC_DCBOR, CODEC_RAW } from '@atcute/cid';
 import { encode, decode } from '@atcute/cbor';
 import { WEASLResponse, WEASLStore, WEASLMethod } from "./index.js";
-import CID from "./cid.js";
+import { CID } from "./cid.js";
 
 export class WEASLMemoryResponse extends WEASLResponse {
   #payload: Uint8Array;

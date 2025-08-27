@@ -3,7 +3,7 @@ import { Cid, fromString as parseCID, toString as stringifyCID, toCidLink, CODEC
 
 // We wrap atcute's CIDs in our own type that has built-in toString & toJSON so
 // people don't need to know how to deal with it.
-export default class CID {
+export class CID {
   #cid: Cid;
   #string: string;
   constructor (cid?: string | Cid) {
