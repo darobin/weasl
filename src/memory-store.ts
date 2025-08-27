@@ -30,7 +30,7 @@ export class WEASLMemoryResponse extends WEASLResponse {
   }
 }
 
-export default class WEASLMemoryStore implements WEASLStore {
+export class WEASLMemoryStore implements WEASLStore {
   #memory = {};
   async init () {
     this.#memory = {};
@@ -40,6 +40,7 @@ export default class WEASLMemoryStore implements WEASLStore {
   }
   async putRaw (raw: Uint8Array | ReadableStream): Promise<CID> {
     if (raw instanceof ReadableStream) raw = new Uint8Array(await arrayBuffer(raw));
+    else raw = new Uint8Array(raw); // need a new object
     const atCID = await create(CODEC_RAW, raw);
     const cid = new CID(atCID);
     this.#memory[cid.toString()] = raw;
@@ -59,9 +60,9 @@ export default class WEASLMemoryStore implements WEASLStore {
     res.setPayload(this.#memory[cid]);
     return res;
   }
-  async has (cid: CID | string): Promise<WEASLResponse> {
-    if (!this.#memory[cid.toString()]) return new WEASLMemoryResponse(cid, 'has', 'Not found');
-    return new WEASLMemoryResponse(cid, 'has');
+  async has (cid: CID | string): Promise<boolean> {
+    if (!this.#memory[cid.toString()]) return false;
+    return true;
   }
   // Note: this always succeeds, we don't check that it's there
   async delete (cid: CID | string): Promise<WEASLResponse> {

@@ -9,7 +9,7 @@ export type WEASLOptions = {
 };
 
 // The methods supported by WEASL requests
-export type WEASLMethod = 'put' | 'get' | 'has' | 'delete';
+export type WEASLMethod = 'put' | 'get' | 'delete';
 
 // Represents a response from a WEASL store, sort of similar to Fetch's Response
 export abstract class WEASLResponse {
@@ -43,7 +43,7 @@ export abstract class WEASLStore {
   abstract putRaw (raw: Uint8Array | ReadableStream): Promise<CID>;
   abstract putData (data: any): Promise<CID>;
   abstract get (cid: CID | string): Promise<WEASLResponse>;
-  abstract has (cid: CID | string): Promise<WEASLResponse>;
+  abstract has (cid: CID | string): Promise<boolean>;
   abstract delete (cid: CID | string): Promise<WEASLResponse>;
 }
 
@@ -59,7 +59,7 @@ export abstract class WEASLInterface {
 // NOTE
 // At this point the indirection of wrapping the store isn't obviously useful
 // but the idea is that this will be pluggable in other ways.
-export default class WEASL implements WEASLStore {
+export class WEASL implements WEASLStore {
   #store: WEASLStore;
   #interfaces: WEASLInterface[];
   constructor (options?: WEASLOptions) {
@@ -72,7 +72,7 @@ export default class WEASL implements WEASLStore {
   async shutdown () {
     await Promise.all([this.#store, ...(this.#interfaces || [])].filter(Boolean).map(v => v.shutdown(this)));
   }
-  notifyAll (method: WEASLMethod, cid: CID | string) {
+  private notifyAll (method: WEASLMethod, cid: CID | string) {
     if (typeof cid === 'string') cid = new CID(cid);
     (this.#interfaces || []).forEach(intf => intf.notify(method, cid));
   }
@@ -89,7 +89,7 @@ export default class WEASL implements WEASLStore {
   async get (cid: CID | string): Promise<WEASLResponse> {
     return this.#store.get(cid);
   }
-  async has (cid: CID | string): Promise<WEASLResponse> {
+  async has (cid: CID | string): Promise<boolean> {
     return this.#store.has(cid);
   }
   async delete (cid: CID | string): Promise<WEASLResponse> {
