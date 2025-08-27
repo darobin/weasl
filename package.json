@@ -1,7 +1,7 @@
 {
   "name": "@dasl/weasl",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Warehouse that's Extensible for Arbitrary Structures & Links (WEASL) — @dasl/weasl — DASL store",
   "author": "Robin Berjon <robin@berjon.com>",
   "license": "Apache-2.0",
